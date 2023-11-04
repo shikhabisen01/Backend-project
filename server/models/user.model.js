@@ -6,7 +6,7 @@ import crypto from 'crypto';
 
 const userSchema = new Schema({
     fullName: {
-        type: 'String',
+        type: String ,
         require: [true, 'Name is required'],
         minLength: [5, 'Name must be at least 5 character'],
         maxLength: [50, 'Name should be less than 50 characters'],
@@ -14,29 +14,33 @@ const userSchema = new Schema({
         trim: true,
     },
     email: {
-        type: 'String',
+        type: String ,
         requires: [true, 'Email is required'],
         lowercase: true,
         trim: true,
         unique: true,
-        match: [],
+        match: [
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+            'Please fill in a valid email address',
+        ]
+        
     },
     password: {
-        type: 'String',
+        type: String ,
         required: [true, 'Password is required'],
-        minLength: [8, 'Password mst be at least 8 character'],
+        minLength: [8, 'Password must be at least 8 character'],
         select: false
     },
     avatar: {
         public_id: {
-            type: 'String'
+            type: String ,
         },
         secure_url: { 
-            type: 'String'
+            type: String ,
         }
     },
     role: {
-        type: 'String',
+        type: String,
         enum: ['USER', 'ADMIN'],
         default: 'USER'
     },
@@ -50,7 +54,7 @@ const userSchema = new Schema({
     timestamps: true
 });
 
-userSchema.pre('save', async function(){
+userSchema.pre('save', async function(next){
     if (!this.isModified('password')) {
         return next();
     }
@@ -60,7 +64,7 @@ userSchema.pre('save', async function(){
 userSchema.methods = {
     generateJWTToken: async function() {
         return await jwt.sign(
-            { id: this._id, email: this.email, subscription: this.subscription, role: this.rol},
+            { id: this._id, email: this.email, subscription: this.subscription, role: this.role},
             process.env.JWT_SECRET,
             {
                 expiresIn: process.env.JWT_EXPIRY,
@@ -68,8 +72,8 @@ userSchema.methods = {
             }
         )
     },
-    comparePassword: function(plainTextPassowrd) {
-        return bycrypt.compare(plainTextPassowrd, this.password);
+    comparePassword: async function(plainTextPassowrd) {
+        return await bcrypt.compare(plainTextPassowrd, this.password);
     },
 
     generatePasswordResetToken: async function () {

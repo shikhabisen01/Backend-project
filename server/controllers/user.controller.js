@@ -12,9 +12,9 @@ const cookieOptions = {
 }
 
 const  register = async (req,res,next) => {
-    const{ fullname, email, password} = req.body;
+    const{ fullName, email, password} = req.body;
 
-    if(!fullname || !email || !password) {
+    if(!fullName || !email || !password) {
         return next (new AppError('All fields are required', 400));
     }
 
@@ -30,7 +30,7 @@ const  register = async (req,res,next) => {
         password,
         avatar: {
             public_id: email,
-            secure_url: "",
+            secure_url: 'https://res.cloudinary.com/du9jzqlpt/image/upload/v1674647316/avatar_drzgxv.jpg',
         }
 
     });
@@ -42,12 +42,12 @@ const  register = async (req,res,next) => {
 
     // TODO: File upload
 
-    console.log('File Details > ',JSON.stringify(req.file));
+    // console.log('File Details > ',JSON.stringify(req.file));
 
 
     if (req.file) {
         try {
-            const result = await cloudinary.v2.uploader(req.file.path, {
+            const result = await cloudinary.v2.uploader.upload(req.file.path, {
                 folder: 'lms',
                 width: 250,
                 height: 250,
@@ -80,8 +80,8 @@ const  register = async (req,res,next) => {
 
     res.cookie('token', token, cookieOptions);
 
-    res.statu(201).json({
-        sucess: true,
+    res.status(201).json({
+        success: true,
         message: 'User registered successfully',
         user,
     })
@@ -89,9 +89,10 @@ const  register = async (req,res,next) => {
 };
 
 const login = async (req, res, next ) => {
+
     try {
 
-        const { email, password} = req.body;
+        const { email, password } = req.body;
 
         if (!email || !password) {
             return next (new AppError('All fields are required', 400));        
@@ -106,13 +107,14 @@ const login = async (req, res, next ) => {
         }
     
         const token = await user.generateJWTToken();
+
         user.password = undefined;
     
         res.cookie('token', token, cookieOptions);
     
         res.status(200).json({
             success: true,
-            message: 'User loggedin successfully',
+            message: 'User logged in successfully',
             user,
         })
         
@@ -269,11 +271,12 @@ const changePassword = async (req, res) => {
     })
 }
 
-const updateUser = async (req, res) => {
+const updateUser = async (req, res, next) => {
     const { fullName } = req.body;
-    const { id } = req.user.id;
+    const { id } = req.params;
 
     const user = await User.findById(id);
+
 
     if (!user) {
         return next (
@@ -281,7 +284,7 @@ const updateUser = async (req, res) => {
         )       
     }
 
-    if (req.fullName) {
+    if (fullName) {
         user.fullName = fullName;
     }
 
@@ -289,7 +292,7 @@ const updateUser = async (req, res) => {
         await cloudinary.v2.uploader.destroy(user.avatar.public_id);
 
         try {
-            const result = await cloudinary.v2.uploader(req.file.path, {
+            const result = await cloudinary.v2.uploader.upload(req.file.path, {
                 folder: 'lms',
                 width: 250,
                 height: 250,
@@ -301,10 +304,9 @@ const updateUser = async (req, res) => {
                 user.avatar.public_id = result.public_id;
                 user.avatar.secure_url = result.secure_url;
                 
-
                 ///Remove file from server
 
-                fs.rm(`uploads/${req.file.filename}`)
+                fs.rm(`uploads/${req.file.filename}`);
             }
         } catch (e) {
             return next(
@@ -316,8 +318,8 @@ const updateUser = async (req, res) => {
 
     await user.save();
 
-    res.statu(200).json({
-        sucess: true,
+    res.status(200).json({
+        success: true,
         message: 'User details updated successfully!',
     });    
 }
